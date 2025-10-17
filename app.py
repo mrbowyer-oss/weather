@@ -1,35 +1,41 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 import requests
-import os
 
 app = Flask(__name__)
 CORS(app)
 
 @app.route("/")
 def home():
-    return "✅ Flask + OpenWeather is live."
+    return "✅ Flask + Open-Meteo is live."
 
 @app.route("/weather")
 def weather():
-    api_key = os.getenv("OPENWEATHER_API_KEY")
+    # Davyhulme, UK coordinates
     lat = "53.457"
     lon = "-2.384"
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
+    url = (
+        f"https://api.open-meteo.com/v1/forecast?"
+        f"latitude={lat}&longitude={lon}"
+        f"&current=temperature_2m,wind_speed_10m,weather_code"
+        f"&daily=sunrise,sunset"
+        f"&timezone=auto"
+    )
 
     try:
         response = requests.get(url, timeout=10)
         data = response.json()
 
+        current = data["current"]
+        daily = data["daily"]
+
         result = {
-            "location": data.get("name"),
-            "temperature": round(data["main"]["temp"]),
-            "description": data["weather"][0]["description"].title(),
-            "icon": data["weather"][0]["icon"],
-            "wind_speed": data["wind"]["speed"],
-            "wind_deg": data["wind"]["deg"],
-            "sunrise": data["sys"]["sunrise"],
-            "sunset": data["sys"]["sunset"]
+            "temperature": round(current["temperature_2m"]),
+            "wind_speed": round(current["wind_speed_10m"], 1),
+            "weather_code": current["weather_code"],
+            "sunrise": daily["sunrise"][0],
+            "sunset": daily["sunset"][0],
+            "source": "open-meteo.com"
         }
         return jsonify(result)
     except Exception as e:
