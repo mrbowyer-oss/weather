@@ -1,45 +1,53 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 import requests
+import datetime
 
 app = Flask(__name__)
 CORS(app)
 
+# Cache store
+cached_weather = None
+cached_time = None
+
 @app.route("/")
 def home():
-    return "✅ Flask + Open-Meteo (with chance of rain) is live."
+    return "✅ Weather app is live."
 
 @app.route("/weather")
-def weather():
-    # Davyhulme Golf Club coordinates
-    lat = "53.457"
-    lon = "-2.384"
-    url = (
-        f"https://api.open-meteo.com/v1/forecast?"
-        f"latitude={lat}&longitude={lon}"
-        f"&current_weather=true"
-        f"&hourly=precipitation_probability"
-        f"&daily=sunrise,sunset"
-        f"&timezone=auto"
-    )
-
+def fetch_weather():
+    global cached_weather, cached_time
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get("https://api.open-meteo.com/v1/forecast", params={
+            "latitude": 53.455,  # Update to your correct location
+            "longitude": -2.384,
+            "current": "temperature_2m,weather_code,wind_speed_10m",
+            "daily": "sunrise,sunset,precipitation_probability_max",
+            "timezone": "Europe/London"
+        })
+
         data = response.json()
-
-        current = data["current_weather"]
+        current = data["current"]
         daily = data["daily"]
-        precip_chance = data["hourly"]["precipitation_probability"][0]
 
-        result = {
-            "temperature": round(current["temperature"]),
-            "wind_speed": round(current["windspeed"], 1),
-            "weather_code": current["weathercode"],
+        cached_weather = {
+            "source": "open-meteo.com",
+            "temperature": current["temperature_2m"],
+            "weather_code": current["weather_code"],
+            "wind_speed": current["wind_speed_10m"],
+            "precip_chance": daily["precipitation_probability_max"][0],
             "sunrise": daily["sunrise"][0],
-            "sunset": daily["sunset"][0],
-            "precip_chance": round(precip_chance),
-            "source": "open-meteo.com"
+            "sunset": daily["sunset"][0]
         }
-        return jsonify(result)
+        cached_time = datetime.datetime.utcnow()
+        return jsonify(cached_weather)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/cached-weather")
+def get_cached_weather():
+    global cached_weather
+    if cached_weather:
+        return jsonify(cached_weather)
+    else:
+        return jsonify({"error": "No cached weather available."}), 404
