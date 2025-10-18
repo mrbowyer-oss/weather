@@ -12,8 +12,8 @@ def home():
 @app.route("/weather")
 def weather():
     # Davyhulme, UK coordinates
-    lat = "53.457"
-    lon = "-2.384"
+    lat = "53.453"
+    lon = "2.369"
     url = (
         f"https://api.open-meteo.com/v1/forecast?"
         f"latitude={lat}&longitude={lon}"
