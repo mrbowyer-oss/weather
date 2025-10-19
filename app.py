@@ -34,7 +34,7 @@ def fetch_weather():
             "source": "open-meteo.com",
             "temperature": current["temperature_2m"],
             "weather_code": current["weather_code"],
-            "wind_speed": current["wind_speed_10m"],
+            "wind_speed": current["wind_speed"],
             "precip_chance": daily["precipitation_probability_max"][0],
             "sunrise": daily["sunrise"][0],
             "sunset": daily["sunset"][0]
